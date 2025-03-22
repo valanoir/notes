@@ -1,0 +1,72 @@
+asp.net core (new project)
+
+write xo - RB2025 ( notepad online )
+
+ASP.NET CORE WEB API - CRUD PROJECT (Products inventory app)
+	1. create project ( keep project-name and solution-name different )
+	2. dot net version : 8.0
+	3. Project start - 
+		a. create entities clases for each
+		b. add packages : EFcore, EFcore.tools, EFcore.sqlServer
+		c.add connection string in AppSetting.json file
+			{
+				"ConnectionStrings":{
+					"RandomDbName" : "connection string value"
+				}
+			}
+		d. create context file in Data folder 
+			-> inherit DbContext 
+			-> create constructor method ; (DbContextOptions<contextClass> objectVariable) : base(objectVariable)
+			-> DbSet<Entities>
+			-> if constant data is needed dummy data then use 
+				override onModelCreating(ModelBuilder modelBuilder)
+				{
+					data for dummy entity
+				}
+		e. Most projects use Repository Pattern + SOlid principles (similar principle patterns if needed)
+		f. Create Repository Folder which will have the interfaces and classes for method implementations
+			-> Create Interfaces I<Entity>Repository.cs 
+			-> Create the Class <Entity>Repository.cs for the Interface Repository Declared Method implementations 
+				(As the interface wont have any implementation only declarations )
+		g. Start Implementation :
+			-> create reference variable for context in <Entity>Repository.cs
+			-> in constructor assign the context to a variable to be used throughout 
+				public constructor(EntityContext varContext)
+				{
+					_ContextVar = varContext;
+				}
+			-> Implement functionalities Insert, Delete, Update, Read (CRUD)
+			-> Insert -
+				use .Add() method in EFcore
+				_ContextVar.Add(EntityData)
+			-> Delete -
+				use .Remove() method in EFcore
+				var = _ContextVar.Entity.Find(id);
+				_ContextVar.Entity.Remove(id);
+				Save();
+			-> Update - 
+				2 ways to do it :
+					using .Update() :
+						var = _ContextVar.Entity.Find(id);
+						_ContextVar.Entity.Update(id);
+						Save();
+					using .Entry().State :
+						_ContextVar.Entry(EntityData).State=EntityState.Modified 
+						Save();
+						
+					Note : 
+					the difference is that in .Update() 1st the data needs to be fetched and then the data is updated using the update function
+					but in the Entry().State the data is directly sent to the database without fetching for updationg removing the extra read 
+					
+					Note (presonal understanding) :
+					EntityState.Modified is syntax not any variable data
+			-> Read -
+				return _ContextVar.Products.ToList();
+				
+				for specific id - 
+					return _ContextVar.Products.Find(id);
+			
+		h. WEB API Controller classes start - 
+			-> create a empty controller file in controller folder 
+			-> 
+					
