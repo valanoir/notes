@@ -68,5 +68,212 @@ ASP.NET CORE WEB API - CRUD PROJECT (Products inventory app)
 			
 		h. WEB API Controller classes start - 
 			-> create a empty controller file in controller folder 
-			-> 
+			-> add a refernce variable to the IEntityRepository.cs
+				private readonly IEntityRepository _variable;
+			-> create constructor method for the controller file and pass the value for variable
+			-> start creating Http Methods 
+				* {HttpGet]
+					public IActionResult Get(){
+						var product = _variable.IEntityRepositoryGetMethod();	//create get functionlity in the repository class and just use that in this controller file
+						return new OkObjectResult(product);						//returns the product values with 200/201 status code if data available
+					}
+				* [HttpPost]
+				public IActionResult Post([FromBody] Entity entityVariable){
+					using (var scope = new TransactionScopr()){
+						_variable.IEntityRepositoryInsertMethod(entityVariable);
+						scope.Complete();
+						return CreatedAtAction(nameOf(Get),
+					}
+				}
+				* [HttpPut]
+				similar to post but instead of createdAtAction just give OkObjectResult()
+				
+				* {HttpDelete]
+				same as put request give OkObjectResult() on success
+				
+	
 					
+Start of project :
+
+	1. create blank project in vs
+	2. usual solution folders created are - FrontEnd, Gateway, Integration, Services
+	3. create new project in services asp.net web api - create models folder - create entity classes 
+	4. DTO - Data Transfer Object
+		this is used to like ommit some of the data which is not required for usage 
+		for example if while reading some data from database thru the crud operation the entity class receives the whole data 
+		but this whole data is usually not required only a part of it is required 
+		at such situations the data can be restricted and sent to the client / functionality using DTO 
+		
+		create a new folder in Models folder - create DTO folder - create a EntityDto.cs ( it will have the required fields )
+	5. create DbContext in Data folder and connect the connection string 
+		* inherit the DbContext 
+		* create contructor with parameter (DbContextOptions<EntityContext> options) inheriting base(options)
+		* create DbSet<> for each entity
+	6. in program.cs pass the connection string from the appsetting.json -
+		builder.service.AddDbContext<EntityContext>(option =>{
+			option.useSqlServer(builder.Configuration GetConnectionString("key");
+		})
+	7. Create controller file for the entity 
+		create constructor and define the entity context in it.
+		create the http methods get(), post() put()..... etc
+		
+		for returning the values instead of using ok() or okObject() or anything else like that 
+		create a ResponseDto() class which will take care of the response values instead of calling the inbuilt function again and again
+		use this responseDto 
+		
+		it will have items like isSuccess (bool) , Result(object) , Message (string)
+		now use that responseDto for returning the values for the http methods in controller file
+		
+		reference code  using responseDto :
+		
+		using AutoMapper;
+		using DemoProject.Services.CouponApi.Data;
+		using DemoProject.Services.CouponApi.Models;
+		using DemoProject.Services.CouponApi.Models.Dto;
+		using Microsoft.AspNetCore.Http;
+		using Microsoft.AspNetCore.Mvc;
+		namespace DemoProject.Services.CouponApi.Controllers
+		{
+		  [Route("api/[controller]")]
+		  [ApiController]
+		  public class CouponController : ControllerBase
+		  {
+			private readonly CouponContext _couponContext;
+			private readonly ResponseDto _responseDto;
+			private IMapper _mapper;
+			public CouponController(CouponContext couponContext,IMapper mapper)
+			{
+			  _couponContext = couponContext;
+			  _responseDto = new ResponseDto();
+			  _mapper = mapper;
+			}
+			[HttpGet]
+			public ResponseDto Get()
+			{
+			  try
+			  {
+				IEnumerable<Coupon> objList = _couponContext.Coupons.ToList();
+				_responseDto.Result = _mapper.Map<IEnumerable<CouponDto>>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess = false;
+				_responseDto.Message = ex.Message;
+			  }
+			  return _responseDto;
+			}
+			[HttpGet("{id:int}")]
+			public object Get(int id)
+			{
+			  try
+			  {
+				Coupon objList = _couponContext.Coupons.First(u => u.CouponId == id);
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess=false;
+				_responseDto.Message=ex.Message;
+			  }
+			  return _responseDto;
+			}
+			[HttpGet]
+			[Route("GetByCode/{code}")]
+			public object GetByCode(string code)
+			{
+			  try
+			  {
+				Coupon objList = _couponContext.Coupons.First(u => u.CouponCode.ToUpper() == code.ToUpper());
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess=false;
+				_responseDto.Message=ex.Message;
+			  }
+			  return _responseDto;
+			}
+			[HttpPost]
+			public ResponseDto Post([FromBody] CouponDto couponDto)
+			{
+			  try
+			  {
+				Coupon objList = _mapper.Map<Coupon>(couponDto);
+				_couponContext.Coupons.Add(objList);
+				_couponContext.SaveChanges();
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess=false;
+				_responseDto.Message=ex.Message;	
+		  }
+			  return _responseDto;
+			}
+			[HttpPut]
+			public ResponseDto Put([FromBody] CouponDto couponDto)
+			{
+			  try
+			  {
+				Coupon objList = _mapper.Map<Coupon>(couponDto);
+				_couponContext.Coupons.Update(objList);
+				_couponContext.SaveChanges();
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess=false;
+				_responseDto.Message=ex.Message;
+			  }
+			  return _responseDto;
+			}
+			[HttpDelete]
+			[Route("{id:int}")]
+			public ResponseDto Delete(int id)
+			{
+			  try
+			  {
+				Coupon objList = _couponContext.Coupons.First(u => u.CouponId == id);
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+				_couponContext.Coupons.Remove(objList);
+				_couponContext.SaveChanges();
+				_responseDto.Result = _mapper.Map<CouponDto>(objList);
+			  }
+			  catch (Exception ex)
+			  {
+				_responseDto.IsSuccess=false;
+				_responseDto.Message=ex.Message;
+			  }
+			  return _responseDto;
+			}
+		  }
+		}
+	
+	8. after doing the controller with all the http methods map it to a AutoMapper 
+		to use this 1st we create a mapConfig.cs file on root 
+		public static MapperConfiguration ProductMapConfig()
+
+		{
+		  var mappingConfig = new MapperConfiguration(config =>
+		  {
+			config.CreateMap<EntityDto, Entity>();
+			config.CreateMap<Entity, EntityDto>();
+		  });
+		  return mappingConfig;
+		}
+	
+	9. then use this mapConfig in Program.cs file ( we have to register this as middleware )
+		
+		IMapper mapper = MapConfig.ProductMapConfig().CreateMapper();
+		builder.Services.AddSingleton(mapper);
+		builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+		
+	10. then use this in the controller file now all the methods instead of doing direct changes to entity class it should do in 
+		EntityDto all the changes 1st reflect to Dto and then it goes to Entity 
+		any input by the user or fetching any thing http mehtods this Dto acts as middleware to filter the required inputs and outputs 
+		
+	NOTE : for any more detialed  reference use the documentation given : 
+			https://github.com/RanjanBhatnagar/RB2025.git
+	
+			
+		
